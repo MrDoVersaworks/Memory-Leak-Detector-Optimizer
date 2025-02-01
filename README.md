@@ -18,7 +18,8 @@ Prerequisites
 •	Boost Library (sudo apt install libboost-dev)
 •	Valgrind (sudo apt install valgrind)
 Clone the Repository
-git clone https://github.com/MrDoVersaworks/Memory-Leak-Detector-Optimizer/blob/6abb9e08dc903e0088140ba6602fb54debd64dd1/Memory%20Leak%20Detector%20%26%20Optimizer%20(CODE)
+git clone https://github.com/MrDoVersaworks/Memory-Leak-Detector-Optimizer.git
+cd Memory-Leak-Detector-Optimizer
 Build the Project
 g++ -o memory_leak_detector main.cpp -lboost_system -lpthread
 Run the Program
