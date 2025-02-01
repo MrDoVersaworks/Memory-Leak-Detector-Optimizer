@@ -1,0 +1,71 @@
+#include <iostream>
+#include <vector>
+#include <memory>
+#include <mutex>
+#include <cstdlib>
+#include <valgrind/memcheck.h>
+#include <boost/pool/pool.hpp>
+
+class MemoryLeakDetector {
+public:
+    MemoryLeakDetector() {
+        std::cout << "[INFO] Memory Leak Detector Initialized." << std::endl;
+    }
+
+    void* allocateMemory(size_t size) {
+        std::lock_guard<std::mutex> lock(mtx);
+        void* ptr = pool.malloc();
+        if (ptr) {
+            allocations.push_back(ptr);
+        } else {
+            throw std::bad_alloc();
+        }
+        return ptr;
+    }
+
+    void deallocateMemory(void* ptr) {
+        std::lock_guard<std::mutex> lock(mtx);
+        auto it = std::find(allocations.begin(), allocations.end(), ptr);
+        if (it != allocations.end()) {
+            pool.free(ptr);
+            allocations.erase(it);
+        }
+    }
+
+    void checkLeaks() {
+        std::lock_guard<std::mutex> lock(mtx);
+        if (!allocations.empty()) {
+            std::cerr << "[WARNING] Potential Memory Leaks Detected:" << std::endl;
+            for (void* ptr : allocations) {
+                std::cerr << "  - Leaked Memory at: " << ptr << std::endl;
+            }
+        } else {
+            std::cout << "[INFO] No memory leaks detected." << std::endl;
+        }
+    }
+
+    ~MemoryLeakDetector() {
+        checkLeaks();
+    }
+
+private:
+    std::vector<void*> allocations;
+    boost::pool<> pool{1024}; // Using Boost pool allocator
+    std::mutex mtx; // Ensuring thread safety
+};
+
+int main() {
+    try {
+        MemoryLeakDetector detector;
+        void* leak1 = detector.allocateMemory(1024);
+        void* leak2 = detector.allocateMemory(2048);
+        
+        // Uncomment below to free memory and prevent leaks
+        // detector.deallocateMemory(leak1);
+        // detector.deallocateMemory(leak2);
+    } catch (const std::exception& e) {
+        std::cerr << "[ERROR] Exception occurred: " << e.what() << std::endl;
+    }
+    
+    return 0;
+}
